@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus Payment</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Segoe UI',system-ui,sans-serif; }
+
+  :root {
+    --accent: #3b82f6;
+    --accent-glow: #60a5fa;
+    --accent-dim: rgba(59,130,246,0.15);
+    --accent-border: rgba(59,130,246,0.35);
+    --glass-bg: rgba(255,255,255,0.04);
+    --glass-border: rgba(255,255,255,0.1);
+    --text-dim: rgba(255,255,255,0.5);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background:#050510;
+    background-image:
+      radial-gradient(circle at 20% 20%, rgba(59,130,246,0.12) 0%, transparent 40%),
+      radial-gradient(circle at 80% 80%, rgba(96,165,250,0.08) 0%, transparent 40%);
+    background-attachment: fixed;
+    color:#fff;
+    line-height:1.5;
+    padding:20px 20px 100px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:100vh;
+    position:relative;
+    overflow-x:hidden;
+  }
+
+  #stars {
+    position:fixed; top:0; left:0;
+    width:100%; height:100%;
+    z-index:0; pointer-events:none;
+  }
+
+  .container { max-width:600px; width:100%; position:relative; z-index:1; }
+
+  .glass {
+    background:var(--glass-bg);
+    backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--glass-border);
+    border-radius:24px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+    padding:24px; margin-bottom:20px;
+    transition:all 0.3s ease;
+  }
+  .glass:hover {
+    border-color:var(--accent-border);
+    box-shadow:0 8px 32px rgba(0,0,0,0.5), 0 0 40px rgba(59,130,246,0.15);
+  }
+
+  svg.icon {
+    width:20px; height:20px;
+    stroke:currentColor; fill:none;
+    stroke-width:2; stroke-linecap:round; stroke-linejoin:round;
+    flex-shrink:0;
+  }
+
+  .header { text-align:center; padding:20px; }
+  .brand {
+    font-size:14px; letter-spacing:3px; color:var(--accent); font-weight:700;
+    text-transform:uppercase; text-shadow:0 0 20px rgba(59,130,246,0.5);
+  }
+  .tagline { font-size:12px; color:var(--text-dim); margin-top:4px; letter-spacing:1px; }
+  .status-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    background:var(--accent-dim); color:var(--accent);
+    padding:6px 18px; border-radius:20px; font-size:11px; font-weight:700;
+    margin-top:14px; border:1px solid var(--accent-border); letter-spacing:1px;
+  }
+  .status-dot {
+    width:6px; height:6px; border-radius:50%; background:var(--accent);
+    box-shadow:0 0 10px var(--accent);
+    animation:pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(1.3); }
+  }
+
+  .page { display:none; }
+  .page.active { display:block; animation:pageIn 0.4s ease; }
+  @keyframes pageIn {
+    from { opacity:0; transform:translateY(20px); }
+    to { opacity:1; transform:translateY(0); }
+  }
+
+  .hero { text-align:center; padding:36px 20px; }
+  .hero h1 {
+    font-size:30px; font-weight:800; letter-spacing:2px;
+    background:linear-gradient(135deg,#fff 0%,#3b82f6 100%);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text; margin-bottom:8px;
+    filter:drop-shadow(0 0 20px rgba(59,130,246,0.3));
+  }
+  .hero h2 { font-size:14px; color:var(--text-dim); font-weight:400; letter-spacing:4px; margin-bottom:18px; }
+  .hero p { font-size:13px; color:var(--text-dim); max-width:400px; margin:0 auto; line-height:1.7; }
+
+  .welcome-title {
+    font-size:22px; font-weight:800; margin-bottom:8px;
+    background:linear-gradient(135deg,#fff,#3b82f6);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+  .welcome-sub { font-size:13px; color:var(--text-dim); line-height:1.7; margin-bottom:20px; }
+  .welcome-sub strong { color:var(--accent); font-weight:700; }
+
+  .feature-list { display:flex; flex-direction:column; gap:10px; margin-top:16px; }
+  .feature-item {
+    display:flex; align-items:flex-start; gap:12px;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.06);
+    border-radius:14px; padding:12px 14px;
+    transition:all 0.3s;
+  }
+  .feature-item:hover { border-color:var(--accent-border); background:rgba(59,130,246,0.06); }
+  .feature-icon {
+    width:34px; height:34px; border-radius:10px;
+    background:var(--accent-dim);
+    border:1px solid var(--accent-border);
+    display:flex; align-items:center; justify-content:center;
+    color:var(--accent); flex-shrink:0;
+  }
+  .feature-text h4 { font-size:13px; font-weight:700; margin-bottom:2px; }
+  .feature-text p { font-size:11px; color:var(--text-dim); line-height:1.4; }
+
+  /* CHANNEL CARD */
+  .channel-list { display:flex; flex-direction:column; gap:12px; }
+
+  .channel-item {
+    display:flex; align-items:center; gap:14px;
+    background:rgba(255,255,255,0.04);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:16px; padding:14px 18px;
+    transition:all 0.3s ease; cursor:pointer;
+    text-decoration:none; color:#fff;
+    position:relative; overflow:hidden;
+  }
+  .channel-item::before {
+    content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+    background:linear-gradient(90deg,transparent,rgba(59,130,246,0.12),transparent);
+    transition:left 0.5s ease;
+  }
+  .channel-item:hover::before { left:100%; }
+  .channel-item:hover {
+    border-color:var(--accent-border);
+    background:rgba(59,130,246,0.08);
+    transform:translateX(6px);
+    box-shadow:0 0 30px rgba(59,130,246,0.2);
+  }
+
+  .channel-icon {
+    width:44px; height:44px; border-radius:12px;
+    background:rgba(37,211,102,0.15);
+    border:1px solid rgba(37,211,102,0.35);
+    display:flex; align-items:center; justify-content:center;
+    color:#25D366; flex-shrink:0;
+  }
+  .channel-icon .icon { width:22px; height:22px; }
+
+  .channel-info { flex:1; display:flex; flex-direction:column; }
+  .channel-name { font-size:14px; font-weight:700; color:#fff; letter-spacing:0.5px; }
+  .channel-desc { font-size:11px; color:var(--text-dim); margin-top:2px; }
+  .channel-arrow {
+    color:var(--accent); opacity:0.6;
+    transition:all 0.3s;
+    display:flex; align-items:center;
+  }
+  .channel-item:hover .channel-arrow { opacity:1; transform:translateX(4px); }
+
+  .btn-primary {
+    display:flex; align-items:center; justify-content:center; gap:10px;
+    width:100%; padding:18px;
+    background:rgba(59,130,246,0.1);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    border:1.5px solid var(--accent-border);
+    border-radius:18px;
+    color:var(--accent-glow);
+    font-weight:800; font-size:15px; letter-spacing:2px;
+    cursor:pointer; text-align:center; text-decoration:none;
+    transition:all 0.3s;
+    text-transform:uppercase;
+    margin-bottom:12px;
+    position:relative; overflow:hidden;
+  }
+  .btn-primary::before {
+    content:''; position:absolute; inset:0;
+    background:linear-gradient(90deg,transparent,rgba(59,130,246,0.2),transparent);
+    transform:translateX(-100%); transition:transform 0.6s;
+  }
+  .btn-primary:hover::before { transform:translateX(100%); }
+  .btn-primary:hover:not(:disabled) {
+    background:rgba(59,130,246,0.2);
+    border-color:var(--accent);
+    color:#fff;
+    box-shadow:0 0 30px rgba(59,130,246,0.4);
+    transform:translateY(-2px);
+  }
+
+  .section-title {
+    font-size:12px; color:rgba(255,255,255,0.4); letter-spacing:3px;
+    font-weight:700; margin-bottom:16px; text-transform:uppercase; text-align:center;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .section-title .icon { color:var(--accent); }
+
+  .payment-list { display:flex; flex-direction:column; gap:12px; }
+
+  .payment-item {
+    display:flex; align-items:center; gap:14px;
+    background:rgba(255,255,255,0.04);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:16px; padding:16px 18px;
+    transition:all 0.3s ease; cursor:pointer;
+    position:relative; overflow:hidden;
+  }
+  .payment-item::before {
+    content:''; position:absolute; top:0; left:-100%; width:100%; height:100%;
+    background:linear-gradient(90deg,transparent,rgba(59,130,246,0.12),transparent);
+    transition:left 0.5s ease;
+  }
+  .payment-item:hover::before { left:100%; }
+  .payment-item:hover {
+    border-color:var(--accent-border);
+    background:rgba(59,130,246,0.08);
+    transform:translateX(6px);
+    box-shadow:0 0 30px rgba(59,130,246,0.2);
+  }
+
+  .payment-icon-box {
+    width:48px; height:48px; border-radius:12px;
+    background:rgba(255,255,255,0.95);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; padding:6px;
+    box-shadow:0 0 15px rgba(59,130,246,0.2);
+  }
+  .payment-icon-box img {
+    width:100%; height:100%; object-fit:contain;
+  }
+
+  .payment-info { flex:1; display:flex; flex-direction:column; }
+  .payment-name { font-size:15px; font-weight:700; color:#fff; letter-spacing:0.5px; }
+  .payment-desc { font-size:11px; color:var(--text-dim); margin-top:2px; }
+
+  .payment-arrow {
+    color:var(--accent); opacity:0.6;
+    transition:all 0.3s;
+    display:flex; align-items:center;
+  }
+  .payment-item:hover .payment-arrow { opacity:1; transform:translateX(4px); }
+
+  /* STEPS */
+  .steps { display:flex; flex-direction:column; gap:12px; }
+  .step {
+    display:flex; gap:16px; align-items:flex-start;
+    background:rgba(255,255,255,0.03);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:16px; padding:16px; transition:all 0.3s ease;
+  }
+  .step:hover { border-color:var(--accent-border); background:rgba(59,130,246,0.06); }
+  .step-number {
+    background:linear-gradient(135deg,var(--accent),#2563eb); color:#fff;
+    width:34px; height:34px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:800; font-size:13px; flex-shrink:0;
+    box-shadow:0 0 20px rgba(59,130,246,0.4);
+  }
+  .step-content h3 { font-size:14px; font-weight:700; margin-bottom:3px; color:#fff; }
+  .step-content p { font-size:12px; color:var(--text-dim); line-height:1.5; }
+  .highlight { color:var(--accent-glow); font-weight:600; }
+
+  /* MODAL */
+  .modal-overlay {
+    position:fixed; inset:0; background:rgba(0,0,0,0.75);
+    backdrop-filter:blur(8px);
+    display:none; align-items:center; justify-content:center;
+    padding:20px; z-index:999;
+  }
+  .modal-overlay.active { display:flex; animation:fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+
+  .modal {
+    background:rgba(15,20,35,0.92);
+    backdrop-filter:blur(30px);
+    border:1px solid var(--accent-border);
+    border-radius:28px;
+    padding:28px 24px;
+    max-width:400px; width:100%;
+    text-align:center;
+    box-shadow:0 0 60px rgba(59,130,246,0.25);
+    animation:slideUp 0.3s ease;
+    max-height:90vh; overflow-y:auto;
+  }
+  @keyframes slideUp {
+    from { transform:translateY(40px); opacity:0; }
+    to { transform:translateY(0); opacity:1; }
+  }
+
+  .modal-title {
+    font-size:18px; font-weight:800; letter-spacing:2px;
+    color:var(--accent-glow); margin-bottom:6px;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+  }
+  .modal-sub {
+    font-size:12px; color:var(--text-dim);
+    margin-bottom:20px; letter-spacing:1px;
+  }
+
+  .qris-box {
+    background:#fff; border-radius:20px; padding:16px;
+    margin-bottom:16px;
+    box-shadow:0 0 30px rgba(59,130,246,0.25);
+  }
+  .qris-box img {
+    width:100%; max-width:240px; display:block; margin:0 auto;
+    border-radius:12px;
+  }
+
+  .account-box {
+    background:var(--accent-dim);
+    border:1px solid var(--accent-border);
+    border-radius:14px;
+    padding:14px 16px;
+    margin-bottom:16px;
+    text-align:left;
+  }
+  .account-label {
+    font-size:10px; color:var(--text-dim);
+    letter-spacing:2px; text-transform:uppercase;
+    font-weight:700; margin-bottom:6px;
+  }
+  .account-number {
+    font-size:18px; font-weight:800;
+    color:var(--accent-glow);
+    letter-spacing:1px;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:10px;
+    cursor:pointer;
+    transition:color 0.3s;
+  }
+  .account-number:hover { color:#fff; }
+  .account-number .copy-icon {
+    opacity:0.6; transition:opacity 0.3s;
+  }
+  .account-number:hover .copy-icon { opacity:1; }
+
+  .btn-modal {
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; padding:15px;
+    border:none; border-radius:14px;
+    font-weight:800; font-size:13px;
+    letter-spacing:1px; cursor:pointer;
+    transition:all 0.3s; margin-bottom:10px;
+    text-decoration:none; text-align:center;
+    backdrop-filter:blur(10px);
+  }
+  .btn-modal .icon { width:18px; height:18px; }
+
+  .btn-konfirmasi {
+    background:rgba(37,211,102,0.1);
+    color:#25D366;
+    border:1.5px solid rgba(37,211,102,0.4);
+  }
+  .btn-konfirmasi:hover {
+    background:rgba(37,211,102,0.2);
+    border-color:#25D366;
+    box-shadow:0 0 25px rgba(37,211,102,0.3);
+    transform:translateY(-2px);
+  }
+
+  .btn-close {
+    background:transparent; color:rgba(255,255,255,0.4);
+    border:none; font-size:12px; padding:10px;
+    cursor:pointer; letter-spacing:1px; margin-top:4px;
+    display:inline-flex; align-items:center; gap:6px;
+    transition:color 0.3s;
+  }
+  .btn-close:hover { color:#fff; }
+  .btn-close .icon { width:14px; height:14px; }
+
+  .steps-modal {
+    text-align:left; font-size:11px;
+    color:var(--text-dim); line-height:1.7;
+    background:rgba(0,0,0,0.2);
+    border-radius:12px;
+    padding:12px 14px;
+    margin-bottom:14px;
+  }
+  .steps-modal strong { color:var(--accent-glow); }
+  .steps-modal ol { padding-left:18px; }
+  .steps-modal li { margin-bottom:4px; }
+
+  /* TOAST */
+  .toast {
+    position:fixed;
+    top:20px; left:50%;
+    transform:translateX(-50%) translateY(-100px);
+    background:rgba(15,20,35,0.95);
+    backdrop-filter:blur(20px);
+    border:1px solid var(--accent-border);
+    color:var(--accent-glow);
+    padding:12px 24px;
+    border-radius:14px;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:1px;
+    z-index:9999;
+    transition:transform 0.4s ease;
+    box-shadow:0 0 30px rgba(59,130,246,0.3);
+    display:flex; align-items:center; gap:8px;
+  }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+  .toast .icon { width:16px; height:16px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position:fixed; bottom:16px; left:50%;
+    transform:translateX(-50%);
+    z-index:100;
+    background:rgba(15,15,25,0.75);
+    backdrop-filter:blur(24px); -webkit-backdrop-filter:blur(24px);
+    border:1px solid var(--glass-border);
+    border-radius:22px;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);
+    padding:8px; display:flex; gap:4px;
+    max-width:calc(100% - 32px); width:fit-content;
+  }
+  .nav-item {
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:3px; padding:10px 16px;
+    border-radius:16px; background:transparent; border:none;
+    color:rgba(255,255,255,0.5);
+    font-size:10px; font-weight:600; letter-spacing:0.5px;
+    cursor:pointer; transition:all 0.3s;
+    position:relative; min-width:64px;
+  }
+  .nav-item .icon { width:20px; height:20px; }
+  .nav-item:hover { color:#fff; }
+  .nav-item.active {
+    background:var(--accent-dim);
+    color:var(--accent-glow);
+    box-shadow:0 0 20px rgba(59,130,246,0.3), inset 0 0 0 1px var(--accent-border);
+  }
+
+  .hidden { display:none !important; }
+
+  @media (max-width:480px) {
+    body { padding:12px 12px 100px; }
+    .glass { padding:20px; border-radius:20px; }
+    .hero h1 { font-size:24px; }
+    .nav-item { min-width:58px; padding:10px 12px; font-size:9px; }
+    .bottom-nav { bottom:10px; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="stars"></canvas>
+
+<div class="container">
+
+  <div class="glass header">
+    <div class="brand">NEXUS PAYMENT</div>
+    <div class="tagline">Universal Payment Solution</div>
+    <div class="status-badge">
+      <span class="status-dot"></span>
+      <span>FAST • AMAN • TERPERCAYA</span>
+    </div>
+  </div>
+
+  <!-- PAGE 1: DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+
+    <div class="glass hero">
+      <h1>WELCOME</h1>
+      <h2>NEXUS PAYMENT</h2>
+      <p>Pusat pembayaran digital yang mendukung berbagai metode populer untuk memudahkan transaksi Anda.</p>
+    </div>
+
+    <div class="glass">
+      <div class="welcome-title">Apa Itu Nexus Payment?</div>
+      <div class="welcome-sub">
+        <strong>Nexus Payment</strong> adalah website layanan pembayaran digital yang menyediakan berbagai metode pembayaran seperti <strong>QRIS, DANA, dan GoPay</strong>. Website ini berfungsi sebagai perantara untuk memudahkan Anda melakukan pembayaran produk atau jasa secara cepat, aman, dan terpercaya.
+      </div>
+
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-icon">
+            <svg class="icon" viewBox="0 0 24 24"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          </div>
+          <div class="feature-text">
+            <h4>Pembayaran Instan</h4>
+            <p>Proses pembayaran cepat via QRIS, DANA, atau GoPay.</p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="feature-text">
+            <h4>Aman & Terpercaya</h4>
+            <p>Setiap transaksi terjamin keamanannya.</p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          </div>
+          <div class="feature-text">
+            <h4>Multi Metode</h4>
+            <p>Mendukung QRIS, DANA, dan GoPay dalam satu platform.</p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-icon">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <div class="feature-text">
+            <h4>Dukungan 24/7</h4>
+            <p>Admin siap membantu Anda kapan pun dibutuhkan.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHANNEL OFFICIAL -->
+    <div class="glass">
+      <div class="section-title">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+        CHANNEL OFFICIAL
+      </div>
+
+      <div class="channel-list">
+        <a href="https://whatsapp.com/channel/0029Vb8jINSDjiOW07Txro3y" class="channel-item" target="_blank">
+          <div class="channel-icon">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+          </div>
+          <div class="channel-info">
+            <div class="channel-name">ALL INFO STOK NEXUS</div>
+            <div class="channel-desc">Update stok & produk terbaru</div>
+          </div>
+          <div class="channel-arrow">
+            <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </a>
+
+        <a href="https://whatsapp.com/channel/0029Vb8ljac4yltTyrJy2S0B" class="channel-item" target="_blank">
+          <div class="channel-icon">
+            <svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div class="channel-info">
+            <div class="channel-name">ALL TESTI NEXUS</div>
+            <div class="channel-desc">Testimoni & bukti transaksi</div>
+          </div>
+          <div class="channel-arrow">
+            <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </a>
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="scrollToPembayaran()">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      MULAI PEMBAYARAN
+    </button>
+
+  </div>
+
+  <!-- PAGE 2: PEMBAYARAN -->
+  <div class="page" id="page-pembayaran">
+    <div class="glass">
+      <div class="section-title">
+        <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+        METODE PEMBAYARAN
+      </div>
+      <div class="payment-list">
+
+        <div class="payment-item" onclick="openQris()">
+          <div class="payment-icon-box">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/d/d0/QR_code_for_mobile_English_Wikipedia.svg/1200px-QR_code_for_mobile_English_Wikipedia.svg.png" alt="QRIS">
+          </div>
+          <div class="payment-info">
+            <div class="payment-name">QRIS</div>
+            <div class="payment-desc">Scan kode QR untuk pembayaran otomatis</div>
+          </div>
+          <div class="payment-arrow">
+            <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </div>
+
+        <div class="payment-item" onclick="openDana()">
+          <div class="payment-icon-box">
+            <img src="https://img100.pixhost.to/images/667/540082364_skyzopedia.jpg" alt="DANA">
+          </div>
+          <div class="payment-info">
+            <div class="payment-name">DANA</div>
+            <div class="payment-desc">Transfer via aplikasi DANA</div>
+          </div>
+          <div class="payment-arrow">
+            <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </div>
+
+        <div class="payment-item" onclick="openGopay()">
+          <div class="payment-icon-box">
+            <img src="https://img100.pixhost.to/images/667/540083275_skyzopedia.jpg" alt="GoPay">
+          </div>
+          <div class="payment-info">
+            <div class="payment-name">GoPay</div>
+            <div class="payment-desc">Transfer via aplikasi GoPay</div>
+          </div>
+          <div class="payment-arrow">
+            <svg class="icon" viewBox="0 0 24 24" style="width:16px;height:16px;"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+        </div>
+
+      </div>
+      <div class="price-note">* Pilih metode pembayaran untuk melanjutkan</div>
+    </div>
+  </div>
+
+  <!-- PAGE 3: PANDUAN -->
+  <div class="page" id="page-panduan">
+    <div class="glass">
+      <div class="section-title">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+        PANDUAN PEMBAYARAN
+      </div>
+
+      <div class="welcome-sub" style="margin-bottom:16px;">
+        <strong>Nexus Payment</strong> adalah website pembayaran yang memudahkan Anda melakukan transaksi dengan berbagai metode populer. Berikut langkah-langkah cara menggunakan website ini:
+      </div>
+
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Buka Menu Pembayaran</h3>
+            <p>Klik menu <span class="highlight">BAYAR</span> di navigasi bawah untuk melihat daftar metode pembayaran.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Pilih Metode</h3>
+            <p>Tentukan metode: <span class="highlight">QRIS, DANA, atau GoPay</span> sesuai kenyamanan Anda.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>Lakukan Pembayaran</h3>
+            <p>Scan QRIS atau transfer ke nomor DANA/GoPay yang tertera pada modal.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>Simpan Bukti</h3>
+            <p>Screenshot bukti pembayaran sebagai lampiran konfirmasi.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <h3>Konfirmasi ke Admin</h3>
+            <p>Tekan tombol <span class="highlight">Konfirmasi via WhatsApp</span>, lalu lampirkan bukti transfer Anda pada chat admin.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="dashboard">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    <span>HOME</span>
+  </button>
+  <button class="nav-item" data-page="pembayaran">
+    <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    <span>BAYAR</span>
+  </button>
+  <button class="nav-item" data-page="panduan">
+    <svg class="icon" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    <span>PANDUAN</span>
+  </button>
+</nav>
+
+<!-- MODAL QRIS -->
+<div class="modal-overlay" id="modalQris">
+  <div class="modal">
+    <div class="modal-title">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      PEMBAYARAN QRIS
+    </div>
+    <div class="modal-sub">Scan kode QRIS di bawah ini</div>
+
+    <div class="qris-box">
+      <img src="https://i.imgur.com/ybPciWR.jpeg" alt="QRIS">
+    </div>
+
+    <div class="steps-modal">
+      <strong>Cara Pembayaran:</strong>
+      <ol>
+        <li>Buka aplikasi banking/e-wallet Anda</li>
+        <li>Pilih menu pembayaran QRIS</li>
+        <li>Scan kode QR di atas</li>
+        <li>Konfirmasi pembayaran</li>
+        <li>Screenshot bukti pembayaran</li>
+      </ol>
+    </div>
+
+    <a class="btn-modal btn-konfirmasi" id="btnKonfirmasiQris" target="_blank">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      Konfirmasi via WhatsApp
+    </a>
+
+    <button class="btn-close" onclick="closeModal('modalQris')">
+      <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Tutup
+    </button>
+  </div>
+</div>
+
+<!-- MODAL DANA -->
+<div class="modal-overlay" id="modalDana">
+  <div class="modal">
+    <div class="modal-title">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      PEMBAYARAN DANA
+    </div>
+    <div class="modal-sub">Transfer ke nomor DANA berikut</div>
+
+    <div class="account-box">
+      <div class="account-label">Nomor DANA</div>
+      <div class="account-number" onclick="copyNumber('089676142267', this)">
+        <span>0896-7614-2267</span>
+        <svg class="icon copy-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </div>
+    </div>
+
+    <div class="steps-modal">
+      <strong>Cara Pembayaran:</strong>
+      <ol>
+        <li>Buka aplikasi DANA</li>
+        <li>Pilih menu Kirim / Transfer</li>
+        <li>Masukkan nomor di atas</li>
+        <li>Masukkan nominal pembayaran</li>
+        <li>Konfirmasi & screenshot bukti</li>
+      </ol>
+    </div>
+
+    <a class="btn-modal btn-konfirmasi" id="btnKonfirmasiDana" target="_blank">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      Konfirmasi via WhatsApp
+    </a>
+
+    <button class="btn-close" onclick="closeModal('modalDana')">
+      <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Tutup
+    </button>
+  </div>
+</div>
+
+<!-- MODAL GOPAY -->
+<div class="modal-overlay" id="modalGopay">
+  <div class="modal">
+    <div class="modal-title">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      PEMBAYARAN GOPAY
+    </div>
+    <div class="modal-sub">Transfer ke nomor GoPay berikut</div>
+
+    <div class="account-box">
+      <div class="account-label">Nomor GoPay</div>
+      <div class="account-number" onclick="copyNumber('089667751176', this)">
+        <span>0896-6775-1176</span>
+        <svg class="icon copy-icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      </div>
+    </div>
+
+    <div class="steps-modal">
+      <strong>Cara Pembayaran:</strong>
+      <ol>
+        <li>Buka aplikasi GoPay</li>
+        <li>Pilih menu Kirim / Transfer</li>
+        <li>Masukkan nomor di atas</li>
+        <li>Masukkan nominal pembayaran</li>
+        <li>Konfirmasi & screenshot bukti</li>
+      </ol>
+    </div>
+
+    <a class="btn-modal btn-konfirmasi" id="btnKonfirmasiGopay" target="_blank">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      Konfirmasi via WhatsApp
+    </a>
+
+    <button class="btn-close" onclick="closeModal('modalGopay')">
+      <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      Tutup
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+  <span id="toastText">Nomor berhasil dicopy</span>
+</div>
+
+<script>
+/* ============================================================
+   KONFIGURASI
+   ============================================================ */
+const ADMIN_WA = '62895429037181';
+const DANA_NUMBER = '089676142267';
+const GOPAY_NUMBER = '089667751176';
+
+/* ============================================================
+   NAVIGASI
+   ============================================================ */
+const navItems = document.querySelectorAll('.nav-item');
+const pages = document.querySelectorAll('.page');
+
+function switchPage(pageName) {
+  pages.forEach(p => p.classList.remove('active'));
+  navItems.forEach(n => n.classList.remove('active'));
+
+  const targetPage = document.getElementById('page-' + pageName);
+  if (targetPage) targetPage.classList.add('active');
+
+  const targetNav = document.querySelector(`.nav-item[data-page="${pageName}"]`);
+  if (targetNav) targetNav.classList.add('active');
+
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+navItems.forEach(item => {
+  item.addEventListener('click', () => switchPage(item.dataset.page));
+});
+
+function scrollToPembayaran() {
+  switchPage('pembayaran');
+}
+
+/* ============================================================
+   MODAL CONTROL
+   ============================================================ */
+function openModal(id) {
+  document.getElementById(id).classList.add('active');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('active');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) overlay.classList.remove('active');
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+  }
+});
+
+/* ============================================================
+   OPEN MODAL PER METODE
+   ============================================================ */
+function openQris() {
+  const pesan =
+`Kepada Admin Nexus Payment,
+
+Saya telah melakukan pembayaran melalui QRIS. Bukti transfer akan saya lampirkan pada chat ini.
+
+Mohon dilakukan verifikasi.
+
+Terima kasih.
+
+Hormat saya,
+Pelanggan Nexus Payment`;
+
+  document.getElementById('btnKonfirmasiQris').href =
+    `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(pesan)}`;
+  openModal('modalQris');
+}
+
+function openDana() {
+  const pesan =
+`Kepada Admin Nexus Payment,
+
+Saya telah melakukan pembayaran melalui DANA ke nomor ${DANA_NUMBER}. Bukti transfer akan saya lampirkan pada chat ini.
+
+Mohon dilakukan verifikasi.
+
+Terima kasih.
+
+Hormat saya,
+Pelanggan Nexus Payment`;
+
+  document.getElementById('btnKonfirmasiDana').href =
+    `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(pesan)}`;
+  openModal('modalDana');
+}
+
+function openGopay() {
+  const pesan =
+`Kepada Admin Nexus Payment,
+
+Saya telah melakukan pembayaran melalui GoPay ke nomor ${GOPAY_NUMBER}. Bukti transfer akan saya lampirkan pada chat ini.
+
+Mohon dilakukan verifikasi.
+
+Terima kasih.
+
+Hormat saya,
+Pelanggan Nexus Payment`;
+
+  document.getElementById('btnKonfirmasiGopay').href =
+    `https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(pesan)}`;
+  openModal('modalGopay');
+}
+
+/* ============================================================
+   COPY NOMOR
+   ============================================================ */
+function copyNumber(num, el) {
+  navigator.clipboard.writeText(num).then(() => {
+    showToast('Nomor berhasil dicopy');
+  }).catch(() => {
+    const textarea = document.createElement('textarea');
+    textarea.value = num;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+    showToast('Nomor berhasil dicopy');
+  });
+}
+
+function showToast(msg) {
+  const toast = document.getElementById('toast');
+  document.getElementById('toastText').textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+/* ============================================================
+   BACKGROUND BINTANG
+   ============================================================ */
+const canvas = document.getElementById('stars');
+const ctx = canvas.getContext('2d');
+let stars = [];
+let mouse = { x: -9999, y: -9999 };
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  initStars();
+}
+
+function initStars() {
+  stars = [];
+  const count = Math.min(180, Math.floor((canvas.width * canvas.height) / 9000));
+  for (let i = 0; i < count; i++) {
+    stars.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      z: Math.random() * 0.8 + 0.2,
+      size: Math.random() * 1.8 + 0.4,
+      twinkle: Math.random() * Math.PI * 2,
+      twinkleSpeed: Math.random() * 0.03 + 0.01,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+    });
+  }
+}
+
+function drawStars() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  stars.forEach(s => {
+    s.x += s.vx * s.z;
+    s.y += s.vy * s.z;
+
+    const dx = mouse.x - s.x;
+    const dy = mouse.y - s.y;
+    const dist = Math.sqrt(dx*dx + dy*dy);
+    if (dist < 150) {
+      const force = (150 - dist) / 150;
+      s.x -= dx * force * 0.02;
+      s.y -= dy * force * 0.02;
+    }
+
+    if (s.x < 0) s.x = canvas.width;
+    if (s.x > canvas.width) s.x = 0;
+    if (s.y < 0) s.y = canvas.height;
+    if (s.y > canvas.height) s.y = 0;
+
+    s.twinkle += s.twinkleSpeed;
+    const alpha = 0.3 + Math.sin(s.twinkle) * 0.4 + 0.3;
+    const isBlue = s.z > 0.7;
+    const color = isBlue ? `rgba(96,165,250,${alpha})` : `rgba(255,255,255,${alpha})`;
+
+    if (s.size > 1.3) {
+      ctx.shadowBlur = 10 * s.z;
+      ctx.shadowColor = isBlue ? '#60a5fa' : '#ffffff';
+    } else { ctx.shadowBlur = 0; }
+
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, s.size * s.z, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  });
+  ctx.shadowBlur = 0;
+  requestAnimationFrame(drawStars);
+}
+
+window.addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; });
+window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+window.addEventListener('touchmove', (e) => {
+  if (e.touches[0]) { mouse.x = e.touches[0].clientX; mouse.y = e.touches[0].clientY; }
+});
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+drawStars();
+</script>
+
+</body>
+</html>
